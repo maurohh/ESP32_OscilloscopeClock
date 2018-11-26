@@ -2,7 +2,9 @@
 
 ESP32 Oscilloscope Clock using internal DACs, with WiFi ntp sync
 
-  Mauro Pintus , Milano 2018/05/25
+Mauro Pintus , Milano 2018/05/25
+
+![](https://github.com/maurohh/ESP32_OscilloscopeClock/blob/master/ESP32_OscilloscopeClock_01.jpg)
 
   How to use it:
   Load this sketch on a ESP32 board using the Arduino IDE 1.8.7
@@ -57,10 +59,5 @@ ESP32 Oscilloscope Clock using internal DACs, with WiFi ntp sync
   http://www.dutchtronix.com/ScopeClock.htm
   
   Thank you!!
-
-
-![](https://github.com/maurohh/ESP32_OscilloscopeClock/blob/master/ESP32_OscilloscopeClock_01.jpg)
-
-
 
 ![](https://github.com/maurohh/ESP32_OscilloscopeClock/blob/master/ESP32_OscilloscopeClock_Excel.jpg)
