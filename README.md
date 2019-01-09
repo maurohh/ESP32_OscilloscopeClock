@@ -6,7 +6,7 @@ Mauro Pintus , Milano 2018/05/25
 
 ![](https://github.com/maurohh/ESP32_OscilloscopeClock/blob/master/ESP32_OscilloscopeClock_01.jpg)
 
-  How to use it:
+  How to use it:\n
   Load this sketch on a ESP32 board using the Arduino IDE 1.8.7
   See Andreas Spiess video linked below if you dont know how to...
   Connect your oscilloscope channels to GPIO25 and GPIO26 of the ESP32
