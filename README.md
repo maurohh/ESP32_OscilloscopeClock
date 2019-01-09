@@ -17,7 +17,9 @@ Mauro Pintus , Milano 2018/05/25
   Enjoy Your new Oscilloscope Clock!!! :)
 
   Additional notes:
+  
   NTP Sync
+  
   By default this sketch will start from a fix time 10:08:37 everityme 
   you reset the board.
   
@@ -32,11 +34,14 @@ Mauro Pintus , Milano 2018/05/25
   The NTPtimeESP library was meant for the ESP8266 and you need to adit the file NTPtimeESP.h to use it with the ESP32.
   Open up the "NTPtimeESP.h" inside the library and replace the "#include <ESP8266WiFi.h>" with "#include <WiFi.h>".
   
-  TimeZone Change - You needed to modify the "NTPch.getNTPtime(1.0, 1);" request to fit your TimeZone. 
+  TimeZone Change
+  
+  You needed to modify the "NTPch.getNTPtime(1.0, 1);" request to fit your TimeZone. 
   Simply change the first argument with your required GMT offset. So for Italy (GMT +1) I've need tit to be 1.0.
   For Pacific Coastal Zone (GMT -8), you need to change "NTPch.getNTPtime(1.0, 1);"  to "NTPch.getNTPtime(-8.0, 1);".
   
   EXCEL XY Coordinates Test
+  
   If you want there is also a special mode that can be enabled uncommenting 
   the line //#define EXCEL, removing the //. In this mode, the sketch
   will run once and will output on the serial monitor all the coordinates
