@@ -9,7 +9,7 @@ Mauro Pintus , Milano 2018/05/25
   How to use it:
   
   Load this sketch on a ESP32 board using the Arduino IDE 1.8.7
-  See Andreas Spiess video linked below if you dont know how to...
+  See Andreas Spiess video linked below if you don't know how to...
   Connect your oscilloscope channels to GPIO25 and GPIO26 of the ESP32
   Connect the ground of the oscilloscope to the GND of the ESP32 board
   Put your Oscilloscope in XY mode
@@ -38,7 +38,7 @@ Mauro Pintus , Milano 2018/05/25
   TimeZone Change
   
   You needed to modify the "NTPch.getNTPtime(1.0, 1);" request to fit your TimeZone. 
-  Simply change the first argument with your required GMT offset. So for Italy (GMT +1) I've need tit to be 1.0.
+  Simply change the first argument with your required GMT offset. So for Italy (GMT +1) I've set it to 1.0.
   For Pacific Coastal Zone (GMT -8), you need to change "NTPch.getNTPtime(1.0, 1);"  to "NTPch.getNTPtime(-8.0, 1);".
   
   EXCEL XY Coordinates Test
