@@ -21,17 +21,14 @@ Mauro Pintus , Milano 2018/05/25
     By default this sketch will start from a fix time 10:08:37 everityme 
     you reset the board.
     To change it, modify the variables h,m,s below.
-
     To synchronize the clock with an NTP server, you have to install 
     the library NTPtimeESP from Andreas Spiess.
     Then ncomment the line //#define NTP, removing the //.
     Edit the WiFi credential in place of Your SSID and Your PASS.
     Check in the serial monitor if it can reach the NTP server.
     You mignt need to chouse a different pool server for your country.
-
     The NTPtimeESP library was meant for the ESP8266 and you need to adit the file NTPtimeESP.h to use it with the ESP32.
     Open up the "NTPtimeESP.h" inside the library and replace the "#include <ESP8266WiFi.h>" with "#include <WiFi.h>".
-
     TimeZone Change - You needed to modify the "NTPch.getNTPtime(1.0, 1);" request to fit your TimeZone. 
     Simply change the first argument with your required GMT offset. So for Italy (GMT +1) I've need tit to be 1.0.
     For Pacific Coastal Zone (GMT -8), you need to change "NTPch.getNTPtime(1.0, 1);"  to "NTPch.getNTPtime(-8.0, 1);".
