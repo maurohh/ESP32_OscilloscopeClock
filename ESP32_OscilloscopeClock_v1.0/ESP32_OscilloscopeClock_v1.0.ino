@@ -65,38 +65,35 @@
 #include <soc/rtc.h>
 #include <soc/sens_reg.h>
 #include "DataTable.h"
+#include <simpleDSTadjust.h>
+#include <WiFi.h>
 
 
 //#define EXCEL
 //#define NTP
+#define UTC_OFFSET -8
+struct dstRule StartRule = {"PDT", Second, Sun, Mar, 2, 3600}; // Pacific Daylight time = UTC/GMT -7 hours
+struct dstRule EndRule = {"PST", First, Sun, Nov, 1, 0};       // Pacific Standard time = UTC/GMT -8 hour
+simpleDSTadjust dstAdjusted(StartRule, EndRule);
 
+// change for different NTP (time servers)
+#define NTP_SERVERS "us.pool.ntp.org", "time.nist.gov", "pool.ntp.org"
 
-#if defined NTP
-  #include <NTPtimeESP.h>
-  #include <WiFi.h>
-  
-  NTPtime NTPch("europe.pool.ntp.org"); // Choose your server pool
-  char *ssid      = "Your SSID";        // Set you WiFi SSID
-  char *password  = "Your PASS";        // Set you WiFi password
-  
-  int status = WL_IDLE_STATUS;
-  strDateTime dateTime;
-#endif //
-
-// Change this to set the initial Time
-// Now is 10:08:37 (12h)
-int h=10;   //Start Hour 
-int m=8;    //Start Minutes
-int s=37;   //Start Seconds
+// August 1st, 2018
+#define NTP_MIN_VALID_EPOCH 1533081600
 
 //Variables
 int           lastx,lasty;
 unsigned long currentMillis  = 0;
 unsigned long previousMillis = 0;    
-int           Timeout        = 20;
-const    long interval       = 990; //milliseconds, you should twick this
-                                    //to get a better accuracy
+int           Timeout        = 20*1000;
+const    long interval       = 10*60*1000; //milliseconds, you should twick this
+                                          //to get a better accuracy
 
+char *ssid      = "SSID";        // Set you WiFi SSID
+char *password  = "PASSWORD";        // Set you WiFi password
+
+const int TRIGGER = 15;
 
 //*****************************************************************************
 // PlotTable 
@@ -177,7 +174,9 @@ inline void Dot(int x, int y)
 
 void Line(byte x1, byte y1, byte x2, byte y2)
 {
+    int n = 2;
     int acc;
+    bool first_point = true;
     // for speed, there are 8 DDA's, one for each octant
     if (y1 < y2) { // quadrant 1 or 2
         byte dy = y2 - y1;
@@ -187,6 +186,12 @@ void Line(byte x1, byte y1, byte x2, byte y2)
                 acc = (dx >> 1);
                 for (; x1 <= x2; x1++) {
                     Dot(x1, y1);
+                    if (first_point)
+                    {
+                      delayMicroseconds(n);
+                      first_point = false;
+                      digitalWrite(TRIGGER, LOW);
+                    }
                     acc -= dy;
                     if (acc < 0) {
                         y1++;
@@ -198,6 +203,12 @@ void Line(byte x1, byte y1, byte x2, byte y2)
                 acc = dy >> 1;
                 for (; y1 <= y2; y1++) {
                     Dot(x1, y1);
+                    if (first_point)
+                    {
+                      delayMicroseconds(n);
+                      first_point = false;
+                      digitalWrite(TRIGGER, LOW);
+                    }
                     acc -= dx;
                     if (acc < 0) {
                         x1++;
@@ -212,6 +223,12 @@ void Line(byte x1, byte y1, byte x2, byte y2)
                 acc = dx >> 1;
                 for (; x1 >= x2; x1--) {
                     Dot(x1, y1);
+                    if (first_point)
+                    {
+                      delayMicroseconds(n);
+                      first_point = false;
+                      digitalWrite(TRIGGER, LOW);
+                    }
                     acc -= dy;
                     if (acc < 0) {
                         y1++;
@@ -223,6 +240,12 @@ void Line(byte x1, byte y1, byte x2, byte y2)
                 acc = dy >> 1;
                 for (; y1 <= y2; y1++) {
                     Dot(x1, y1);
+                    if (first_point)
+                    {
+                      delayMicroseconds(n);
+                      first_point = false;
+                      digitalWrite(TRIGGER, LOW);
+                    }
                     acc -= dx;
                     if (acc < 0) {
                         x1--;
@@ -240,6 +263,12 @@ void Line(byte x1, byte y1, byte x2, byte y2)
                 acc = dx >> 1;
                 for (; x1 <= x2; x1++) {
                     Dot(x1, y1);
+                    if (first_point)
+                    {
+                      delayMicroseconds(n);
+                      first_point = false;
+                      digitalWrite(TRIGGER, LOW);
+                    }
                     acc -= dy;
                     if (acc < 0) {
                         y1--;
@@ -252,6 +281,12 @@ void Line(byte x1, byte y1, byte x2, byte y2)
                 acc = dy >> 1;
                 for (; y1 >= y2; y1--) { 
                     Dot(x1, y1);
+                    if (first_point)
+                    {
+                      delayMicroseconds(n);
+                      first_point = false;
+                      digitalWrite(TRIGGER, LOW);
+                    }
                     acc -= dx;
                     if (acc < 0) {
                         x1++;
@@ -267,6 +302,12 @@ void Line(byte x1, byte y1, byte x2, byte y2)
                 acc = dx >> 1;
                 for (; x1 >= x2; x1--) {
                     Dot(x1, y1);
+                    if (first_point)
+                    {
+                      delayMicroseconds(n);
+                      first_point = false;
+                      digitalWrite(TRIGGER, LOW);
+                    }
                     acc -= dy;
                     if (acc < 0) {
                         y1--;
@@ -279,6 +320,12 @@ void Line(byte x1, byte y1, byte x2, byte y2)
                 acc = dy >> 1;
                 for (; y1 >= y2; y1--) {
                     Dot(x1, y1);
+                    if (first_point)
+                    {
+                      delayMicroseconds(n);
+                      first_point = false;
+                      digitalWrite(TRIGGER, LOW);
+                    }
                     acc -= dx;
                     if (acc < 0) {
                         x1--;
@@ -289,12 +336,27 @@ void Line(byte x1, byte y1, byte x2, byte y2)
         }
     
     }
+
+    
+    digitalWrite(TRIGGER, HIGH);
 }
 
 // End Line 
 //*****************************************************************************
 
-
+// time_t getNtpTime()
+void getNtpTime() {
+  time_t now;
+  
+  int i = 0;
+  configTime(UTC_OFFSET * 3600, 0, NTP_SERVERS);
+  while((now = time(nullptr)) < NTP_MIN_VALID_EPOCH) {
+    delay(500);
+    i++;
+    if (i > 60)
+      break;
+  }
+}
 
 //*****************************************************************************
 // setup 
@@ -308,81 +370,40 @@ void setup()
   //rtc_clk_cpu_freq_set(RTC_CPU_FREQ_240M);
   Serial.println("CPU Clockspeed: ");
   Serial.println(rtc_clk_cpu_freq_value(rtc_clk_cpu_freq_get()));
+
+  Serial.println("Connecting to Wi-Fi");
+
+  pinMode(TRIGGER, OUTPUT);
+  digitalWrite(TRIGGER, HIGH);
+    
+  WiFi.begin (ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(1000);
+    Timeout--;
+    if (Timeout==0){
+      Serial.println("\nWiFi Timeout");
+      break;
+    }
+  }
   
   dac_output_enable(DAC_CHANNEL_1);
   dac_output_enable(DAC_CHANNEL_2);
 
-  if (h > 12) h=h-12;
+  getNtpTime();
 
-  #if defined NTP
-    Serial.println("Connecting to Wi-Fi");
-    
-    WiFi.begin (ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
-      Serial.print(".");
-      delay(1000);
-      Timeout--;
-      if (Timeout==0){
-        Serial.println("\nWiFi Timeout");
-        break;
-      }
-    }
-    
-    if (Timeout!=0){
-      Serial.println("\nWiFi connected");
-      Serial.println("NTP request sent to Server.");
-      dateTime = NTPch.getNTPtime(1.0, 1);
-      Timeout=20;
+  char *dstAbbrev;
+  time_t now = dstAdjusted.time(&dstAbbrev);
+  struct tm * timeinfo = localtime (&now);
   
-      while (!dateTime.valid) {
-        dateTime = NTPch.getNTPtime(1.0, 1);
-        Serial.print(".");
-        delay(1000);
-        Timeout--;
-        if (Timeout==0){
-          Serial.println("\nNTP Server Timeout");
-          break;
-        }
-      }
-      
-      if (Timeout!=0){
+  Serial.println();
+  Serial.printf("Current time: %d:%d:%d\n", timeinfo->tm_hour%12, timeinfo->tm_min,timeinfo->tm_sec);
+  
+//  // calculate for time calculation how much the dst class adds.
+//  time_t dstOffset = UTC_OFFSET * 3600 + dstAdjusted.time(nullptr) - now;
+//  Serial.printf("Time difference for DST: %d\n", dstOffset);
 
-        Serial.println("\nUsing NTP Time");
-        NTPch.printDateTime(dateTime);
-    
-        byte actualHour      = dateTime.hour;
-        byte actualMinute    = dateTime.minute;
-        byte actualsecond    = dateTime.second;
-        int  actualyear      = dateTime.year;
-        byte actualMonth     = dateTime.month;
-        byte actualday       = dateTime.day;
-        byte actualdayofWeek = dateTime.dayofWeek;
-
-        if (actualHour > 12) actualHour=actualHour-12;
-        
-        h=actualHour;
-        m=actualMinute;
-        s=actualsecond;
-      }
-      else{
-        Serial.println("\nUsing Fix Time");
-      }
-    }  
-  #endif    
-
-  #if !defined NTP
-    Serial.println("Using Fix Time");
-  #endif
-
-  if (h<10) Serial.print("0");
-  Serial.print(h);
-  Serial.print(":");
-  if (m<10) Serial.print("0");
-  Serial.print(m);
-  Serial.print(":");
-  if (s<10) Serial.print("0");
-  Serial.println(s);
-  h=(h*5)+m/12;
+  previousMillis = currentMillis;
 }
 
 // End setup 
@@ -395,28 +416,22 @@ void setup()
 //*****************************************************************************
 
 void loop() {
-
+  
   currentMillis = millis();
 
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
-    s++;
-  }
-  if (s==60) {
-    s=0;
-    m++;
-    if ((m==12)||(m==24)||(m==36)||(m==48)) {
-      h++;
-    }
-  }
-  if (m==60) {
-    m=0;
-    h++;
-  }
-  if (h==60) {
-    h=0;
+    getNtpTime();
   }
 
+  char *dstAbbrev;
+  time_t now = dstAdjusted.time(&dstAbbrev);
+  struct tm * timeinfo = localtime (&now);
+
+  int h = timeinfo->tm_hour%12;
+  int m = timeinfo->tm_min;
+  int s = timeinfo->tm_sec;
+  
   //Optionals
   //PlotTable(DialDots,sizeof(DialDots),0x00,1,0);
   //PlotTable(TestData,sizeof(TestData),0x00,0,00); //Full
@@ -431,7 +446,7 @@ void loop() {
 
   PlotTable(DialData,sizeof(DialData),0x00,1,0);      //2 to back trace
   PlotTable(DialDigits12,sizeof(DialDigits12),0x00,1,0);//2 to back trace 
-  PlotTable(HrPtrData, sizeof(HrPtrData), 0xFF,0,9*h);  // 9*h
+  PlotTable(HrPtrData, sizeof(HrPtrData), 0xFF,0,(9*(5*h+m/12)));  // 9*h
   PlotTable(MinPtrData,sizeof(MinPtrData),0xFF,0,9*m);  // 9*m
   PlotTable(SecPtrData,sizeof(SecPtrData),0xFF,0,5*s);  // 5*s
 
