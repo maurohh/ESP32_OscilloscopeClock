@@ -5,6 +5,7 @@ ESP32 Oscilloscope Clock using internal DACs with I2S and DMA, with WiFi ntp syn
 Mauro Pintus , Milano 2018/05/25
 
 DL4OU, 2021/07/15
+
 I have implemented a solution for avoiding ghost pixels. This software uses I2S and DMA to synchronise both DAC-Channels.
 
 ![](https://github.com/maurohh/ESP32_OscilloscopeClock/blob/master/ESP32_OscilloscopeClock_01.jpg)
