@@ -1,9 +1,10 @@
 /******************************************************************************
   
   ESP32 Oscilloscope Clock 
-  using internal DACs, with WiFi and ntp sync.
+  using internal DACs with I2S and DMA, with WiFi and ntp sync.
   
   Mauro Pintus , Milano 2018/05/25
+  DL4OU , 2021/07/15
 
   How to use it:
   Load this sketch on a ESP32 board using the Arduino IDE 1.8.7
@@ -53,6 +54,8 @@
 
   Andreas Spiess NTP Library
   https://github.com/SensorsIot/NTPtimeESP
+
+  Includes Code from bitluni / Wave2020
   
   My project is based on this one:
   http://www.dutchtronix.com/ScopeClock.htm
@@ -64,12 +67,45 @@
 #include <driver/dac.h>
 #include <soc/rtc.h>
 #include <soc/sens_reg.h>
+#include "driver/i2s.h"
 #include "DataTable.h"
 
 
 //#define EXCEL
 //#define NTP
 
+
+//--> Attribution 4.0 International (CC BY 4.0)
+//bitluni 2020
+static const i2s_port_t i2s_num = (i2s_port_t)I2S_NUM_0; // i2s port number
+
+//static i2s_config_t i2s_config;
+static const i2s_config_t i2s_config = {
+     .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_DAC_BUILT_IN),
+     .sample_rate = 1000000,  //not really used
+     .bits_per_sample = (i2s_bits_per_sample_t)I2S_BITS_PER_SAMPLE_16BIT, 
+     .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
+     .communication_format = I2S_COMM_FORMAT_I2S_MSB,
+     .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+     .dma_buf_count = 2,
+     .dma_buf_len = 1024  //big buffers to avoid noises
+};
+
+int bpos = 0;
+short buff[1024];
+
+//fills the i2s buffer with another coordinate and pushes the buffer once it's full
+void pixel(int x, int y)
+{
+  buff[bpos++ ^ 1] = x << 8;
+  buff[bpos++ ^ 1] = y << 8;
+  if(bpos == 1024)
+  {
+    bpos = 0;
+    i2s_write_bytes(i2s_num, (char*)buff, sizeof(buff), portMAX_DELAY);
+  }
+}
+//end bitluni 2020 <--
 
 #if defined NTP
   #include <NTPtimeESP.h>
@@ -130,10 +166,9 @@ void PlotTable(byte *SubTable, int SubTableSize, int skip, int opt, int offset)
 
 inline void Dot(int x, int y)
 {
-    if (lastx!=x){
-      lastx=x;
-      dac_output_voltage(DAC_CHANNEL_1, x);
-    }
+  lastx=x;
+  lasty=y;
+  pixel (x, y);
     #if defined EXCEL
       Serial.print("0x");
       if (x<=0xF) Serial.print("0");
@@ -146,10 +181,6 @@ inline void Dot(int x, int y)
       Serial.print(lasty,HEX);
       Serial.println(",");
     #endif
-    if (lasty!=y){
-      lasty=y;
-      dac_output_voltage(DAC_CHANNEL_2, y);
-    }
     #if defined EXCEL
       Serial.print("0x");
       if (x<=0xF) Serial.print("0");
@@ -308,9 +339,17 @@ void setup()
   //rtc_clk_cpu_freq_set(RTC_CPU_FREQ_240M);
   Serial.println("CPU Clockspeed: ");
   Serial.println(rtc_clk_cpu_freq_value(rtc_clk_cpu_freq_get()));
-  
-  dac_output_enable(DAC_CHANNEL_1);
-  dac_output_enable(DAC_CHANNEL_2);
+
+  i2s_driver_install(i2s_num, &i2s_config, 0, NULL);    //start i2s driver
+  i2s_set_pin(i2s_num, NULL);                           //use internal DAC
+  //dummy frequency
+  i2s_set_sample_rates(i2s_num, 1000000);               //dummy sample rate, since the function fails at high values
+
+  //this is the hack that enables the highest sampling rates, You can even change BCK_DIV_NUM to 1 but the DACs lag behind with the voltage
+  SET_PERI_REG_BITS(I2S_CLKM_CONF_REG(0), I2S_CLKM_DIV_A_V, 1, I2S_CLKM_DIV_A_S);
+  SET_PERI_REG_BITS(I2S_CLKM_CONF_REG(0), I2S_CLKM_DIV_B_V, 1, I2S_CLKM_DIV_B_S);
+  SET_PERI_REG_BITS(I2S_CLKM_CONF_REG(0), I2S_CLKM_DIV_NUM_V, 2, I2S_CLKM_DIV_NUM_S); 
+  SET_PERI_REG_BITS(I2S_SAMPLE_RATE_CONF_REG(0), I2S_TX_BCK_DIV_NUM_V, 15, I2S_TX_BCK_DIV_NUM_S);
 
   if (h > 12) h=h-12;
 
